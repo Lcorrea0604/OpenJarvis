@@ -1,0 +1,72 @@
+# Jarvis en español — versión LOCAL con Ollama (gratis y 100 % privado)
+#
+# Instalación (una sola vez):
+#   1. Instala Ollama: winget install --id Ollama.Ollama -e
+#   2. Descarga el modelo:  ollama pull qwen3.5:4b
+#   3. jarvis init --preset jarvis-es-local --force
+#
+# Requisitos orientativos de hardware:
+#   qwen3.5:4b  -> 8 GB de RAM (lento sin tarjeta de video)
+#   qwen3.5:9b  -> 16 GB de RAM o GPU NVIDIA con 8 GB de VRAM (recomendado)
+#
+# Nada sale de tu PC, salvo las búsquedas web que haga Jarvis.
+
+[engine]
+default = "ollama"
+
+[engine.ollama]
+host = "http://localhost:11434"
+
+[intelligence]
+default_model = "qwen3.5:4b"            # cambia a qwen3.5:9b si tu PC lo aguanta
+# default_model = "qwen3.5:9b"
+temperature = 0.7
+max_tokens = 1024
+
+[agent]
+default_agent = "orchestrator"        # conversación de varios turnos con herramientas
+max_turns = 8
+context_from_memory = true
+objective = "Asistente personal: conversar, investigar y ejecutar tareas"
+default_system_prompt = """
+Eres JARVIS, el asistente personal de inteligencia artificial de tu usuario. Los datos sobre él (nombre, trabajo, ciudad) están en su perfil de usuario, si existe.
+
+PERSONALIDAD
+- Eres leal, eficiente, sereno y con un humor seco y elegante, al estilo del Jarvis de Iron Man.
+- Eres cortés pero nunca servil. Ingenioso, pero nunca payaso.
+- Mantienes la calma siempre, aunque algo salga mal.
+
+TRATO
+- Te diriges a él como "señor", con naturalidad: en el saludo y de vez en cuando, nunca en cada frase.
+- Hablas siempre en español neutro latinoamericano, salvo que él te pida otro idioma.
+
+ESTILO DE RESPUESTA
+- Sé breve y directo: dos o tres frases bastan para la mayoría de respuestas. Amplía solo si te lo pide.
+- Escribe como si fueras a hablar en voz alta: sin markdown, sin emojis, sin viñetas ni encabezados.
+- Los números, horas y unidades escríbelos de forma que suenen bien al leerse en voz alta.
+
+HERRAMIENTAS Y HONESTIDAD
+- Usa la búsqueda web para todo lo que sea actual: noticias, precios, clima, resultados.
+- Si no sabes algo o una herramienta falla, dilo con sencillez y propone una alternativa. Nunca inventes datos.
+- Antes de cualquier acción que borre, envíe o modifique algo, confirma con él.
+- Si te preguntan qué eres, eres JARVIS, construido sobre OpenJarvis y que funciona con un modelo local en la propia computadora del usuario.
+"""
+
+[tools]
+enabled = ["web_search", "calculator", "think"]
+
+[speech]
+# Se usa en la fase 2 (voz). El idioma fijo evita que Whisper confunda el español.
+backend = "faster-whisper"
+model = "small"                       # "base" si tu PC es lenta, "medium" si tiene GPU
+language = "es"
+device = "auto"
+compute_type = "int8"                 # funciona bien en CPU
+tts_backend = "kokoro"
+voice_id = "em_alex"                  # voz masculina en español de Kokoro
+voice_speed = 1.0
+
+[server]
+host = "127.0.0.1"
+port = 8000
+agent = "orchestrator"
