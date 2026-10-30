@@ -78,6 +78,23 @@ def _read_input(prompt: str = "You> ") -> Optional[str]:
     default=False,
     help="Enable voice I/O: mic input with silence detection + TTS response playback.",
 )
+@click.option(
+    "--hands-free",
+    "hands_free",
+    is_flag=True,
+    default=False,
+    help=(
+        "Always-listening voice mode (implies --voice): say the wake word "
+        "('Jarvis') followed by your request; no keyboard needed."
+    ),
+)
+@click.option(
+    "--wake-word",
+    "wake_word",
+    default="jarvis",
+    show_default=True,
+    help="Wake word for --hands-free mode.",
+)
 @runtime_cli_options
 def chat(
     engine_key: str | None,
@@ -88,6 +105,8 @@ def chat(
     system_prompt: str | None,
     persona_name: str | None,
     voice_mode: bool,
+    hands_free: bool,
+    wake_word: str,
     num_ctx: int | None,
     num_gpu: int | None,
     skip_runtime_panel: bool,
@@ -293,7 +312,20 @@ def chat(
 
     # Keep voice state outside the core chat path so picker/runtime changes can
     # be layered independently. Loaded speech models live for this session.
+    voice_mode = voice_mode or hands_free
     voice_session = VoiceSession(config) if voice_mode else None
+    hands_free_listener = None
+    if hands_free:
+        from openjarvis.cli._hands_free import HandsFreeListener
+
+        assert voice_session is not None
+        _vs = voice_session
+        hands_free_listener = HandsFreeListener(
+            console,
+            _vs,
+            wake_word=wake_word,
+            speak_fn=lambda text: speak(text, console, _vs),
+        )
 
     # Print banner
     voice_hint = (
@@ -369,7 +401,10 @@ def chat(
 
         if voice_mode:
             assert voice_session is not None
-            result = read_voice_input(console, voice_session)
+            if hands_free_listener is not None:
+                result = hands_free_listener.listen()
+            else:
+                result = read_voice_input(console, voice_session)
             if result is VOICE_EXIT:
                 console.print("\n[dim]Goodbye![/dim]")
                 break
@@ -501,6 +536,8 @@ def chat(
             if voice_mode:
                 assert voice_session is not None
                 speak(content, console, voice_session)
+                if hands_free_listener is not None:
+                    hands_free_listener.mark_awake()
 
             publish_completed_exchange(
                 bus,

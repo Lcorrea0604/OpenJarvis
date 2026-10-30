@@ -8,7 +8,8 @@ Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asist
 |---|---|---|
 | 1 | Chat por texto en español, personalidad de Jarvis y búsqueda web | ✅ listo |
 | 2 | Voz completa: micrófono → Whisper → cerebro → voz peruana (Edge TTS), y conoce la fecha y la hora | ✅ listo |
-| 3 | Palabra de activación "Jarvis" y HUD animado estilo Iron Man | ⏳ |
+| 3a | Manos libres: escucha siempre y se activa con "Jarvis"; acceso directo y arranque con Windows | ✅ listo |
+| 3b | HUD animado estilo Iron Man | ⏳ |
 | 4 | Herramientas de Windows: abrir apps, archivos, Gmail y Calendar | ⏳ |
 | 5 | Memoria de largo plazo y perfil del usuario | ⏳ |
 | — | Migración a modelo local con Ollama | 📋 planificada (ver abajo) |
@@ -105,6 +106,31 @@ uv run jarvis chat --voice
 **Cambiar la voz:** edita `voice_id` en `~\.openjarvis\config.toml`. Por ejemplo, `es-PE-CamilaNeural` para voz de mujer peruana, o `es-MX-JorgeNeural`. La velocidad se cambia en `voice_speed`.
 
 **Si no te escucha:** en Windows ve a Configuración → Privacidad y seguridad → Micrófono, y activa el acceso para las apps de escritorio. Revisa también que el micrófono predeterminado sea el integrado (Configuración → Sistema → Sonido → Entrada).
+
+### 6. Modo manos libres (sin tocar nada)
+
+```powershell
+uv run jarvis chat --hands-free
+```
+
+- Jarvis escucha todo el tiempo, pero **solo responde cuando dices "Jarvis"**. Por ejemplo: *"Jarvis, ¿qué hora es?"* u *"Oye Jarvis, ¿cómo está el tráfico?"*.
+- Si dices solo *"Jarvis"*, te contesta *"¿Sí, señor?"* y espera tu pedido.
+- Después de cada respuesta tienes **8 segundos** para seguir hablando sin repetir su nombre, como en una conversación normal.
+- La conversación de fondo, la tele o la música se ignoran mientras no digan "Jarvis".
+- Para cerrarlo, di *"Jarvis, apágate"* o pulsa Ctrl+C.
+
+**Acceso directo en el escritorio y arranque automático**
+
+Corre esto una sola vez, desde la carpeta del repo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -AlIniciar
+```
+
+- Crea un ícono **JARVIS** en tu escritorio. Con doble clic se abre en modo manos libres.
+- Con `-AlIniciar`, Jarvis también arranca solo, minimizado, cada vez que enciendes Windows.
+- Si quieres solo el ícono, sin arranque automático, quita `-AlIniciar` del comando.
+- Para dejar de iniciarlo con Windows: `powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -QuitarInicio`.
 
 ## Migración futura a Ollama (modelo local)
 
