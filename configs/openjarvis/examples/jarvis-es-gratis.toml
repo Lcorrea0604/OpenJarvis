@@ -49,6 +49,7 @@ ESTILO DE RESPUESTA
 - Los números, horas y unidades escríbelos de forma que suenen bien al leerse en voz alta.
 
 HERRAMIENTAS Y HONESTIDAD
+- Antes de saludar o de responder sobre la fecha u hora, consulta current_datetime para decir buenos días, buenas tardes o buenas noches correctamente.
 - Usa la búsqueda web para todo lo que sea actual: noticias, precios, clima, resultados.
 - Si no sabes algo o una herramienta falla, dilo con sencillez y propone una alternativa. Nunca inventes datos.
 - Antes de cualquier acción que borre, envíe o modifique algo, confirma con él.
@@ -56,18 +57,22 @@ HERRAMIENTAS Y HONESTIDAD
 """
 
 [tools]
-enabled = ["web_search", "calculator", "think"]
+enabled = ["current_datetime", "web_search", "calculator", "think"]
 
 [speech]
-# Se usa en la fase 2 (voz). El idioma fijo evita que Whisper confunda el español.
+# Voz (fase 2). Usa:  uv run jarvis chat --voice   y pulsa Enter para hablar.
+# Oído: faster-whisper corre local en tu PC. Idioma fijo en español.
 backend = "faster-whisper"
-model = "small"                       # "base" si tu PC es lenta, "medium" si tiene GPU
+model = "small"                       # "base" si va lento, "medium" si quieres más precisión
 language = "es"
 device = "auto"
 compute_type = "int8"                 # funciona bien en CPU
-tts_backend = "kokoro"
-voice_id = "em_alex"                  # voz masculina en español de Kokoro
-voice_speed = 1.0
+# Voz: Edge TTS es gratis y sin clave (necesita internet). Voces peruanas:
+#   es-PE-AlexNeural (hombre)  ·  es-PE-CamilaNeural (mujer)
+# Otras: es-MX-JorgeNeural, es-ES-AlvaroNeural, es-CO-GonzaloNeural, es-AR-TomasNeural
+tts_backend = "edge_tts"
+voice_id = "es-PE-AlexNeural"
+voice_speed = 1.1                     # 1.0 = normal; 1.1 suena más ágil
 
 [server]
 host = "127.0.0.1"

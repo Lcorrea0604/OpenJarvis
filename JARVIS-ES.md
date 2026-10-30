@@ -7,7 +7,7 @@ Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asist
 | Fase | Qué incluye | Estado |
 |---|---|---|
 | 1 | Chat por texto en español, personalidad de Jarvis y búsqueda web | ✅ listo |
-| 2 | Voz completa: micrófono → Whisper → cerebro → voz | ⏳ |
+| 2 | Voz completa: micrófono → Whisper → cerebro → voz peruana (Edge TTS), y conoce la fecha y la hora | ✅ listo |
 | 3 | Palabra de activación "Jarvis" y HUD animado estilo Iron Man | ⏳ |
 | 4 | Herramientas de Windows: abrir apps, archivos, Gmail y Calendar | ⏳ |
 | 5 | Memoria de largo plazo y perfil del usuario | ⏳ |
@@ -44,8 +44,10 @@ Cierra PowerShell y ábrelo de nuevo.
 cd $HOME\Desktop\Jarvis
 git clone https://github.com/Lcorrea0604/OpenJarvis.git .    # solo la primera vez
 git pull                                                     # para traer cambios nuevos
-uv sync --extra inference-cloud --extra inference-google
+uv sync --extra inference-cloud --extra inference-google --extra speech --extra voice-edge
 ```
+
+Los extras `speech` y `voice-edge` instalan el oído (Whisper) y la voz (Edge TTS).
 
 ### 3. Guardar la clave de API
 
@@ -88,6 +90,21 @@ Prueba, por ejemplo:
 - `Calcula el 18 % de IGV sobre 2 450 soles.`
 
 Para la interfaz gráfica en el navegador (necesita Node.js 22 o superior): `uv run jarvis gui`.
+
+### 5. Hablar con Jarvis por voz
+
+```powershell
+uv run jarvis chat --voice
+```
+
+- Cuando aparezca `You> [type, or press Enter to speak]`, **pulsa Enter sin escribir nada** y habla.
+- Jarvis deja de escuchar solo, cuando haces una pausa de un segundo y medio.
+- Te responde con voz por los parlantes. También puedes seguir escribiendo como siempre.
+- La primera vez tarda un poco más: descarga el modelo de Whisper (unos 460 MB para `small`).
+
+**Cambiar la voz:** edita `voice_id` en `~\.openjarvis\config.toml`. Por ejemplo, `es-PE-CamilaNeural` para voz de mujer peruana, o `es-MX-JorgeNeural`. La velocidad se cambia en `voice_speed`.
+
+**Si no te escucha:** en Windows ve a Configuración → Privacidad y seguridad → Micrófono, y activa el acceso para las apps de escritorio. Revisa también que el micrófono predeterminado sea el integrado (Configuración → Sistema → Sonido → Entrada).
 
 ## Migración futura a Ollama (modelo local)
 
@@ -146,6 +163,8 @@ git merge upstream/main
 | `401 invalid x-api-key` (Claude) o `API key not valid` (Gemini) | La clave está mal guardada: repite el paso 3 |
 | `429` o "quota exceeded" (Gemini) | Llegaste al límite gratuito; espera un minuto, o hasta el día siguiente |
 | `404 NOT_FOUND ... no longer available` (Gemini) | Google retiró ese modelo. Usa el alias que siempre funciona: `uv run jarvis config set intelligence.default_model gemini-flash-lite-latest` |
+| `Mic error` o "Nothing heard" | Revisa los permisos del micrófono (paso 5). Habla más cerca o más fuerte |
+| No se escucha la voz | Revisa que tengas internet (Edge TTS es en línea) y que el volumen no esté en silencio |
 | Responde en inglés | Verifica que corriste `jarvis init --preset jarvis-es-gratis --force` |
 
 Cualquier otro error: corre `uv run jarvis doctor` y comparte la salida.
