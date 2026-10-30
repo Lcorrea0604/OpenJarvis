@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import asyncio
 import io
+import re
 import threading
+import time
 from typing import Any, List
 
 from openjarvis.core.registry import TTSRegistry
@@ -20,6 +22,16 @@ from openjarvis.speech.tts import TTSBackend, TTSResult
 
 DEFAULT_VOICE = "es-PE-AlexNeural"
 _SAMPLE_RATE = 24000  # edge-tts streams 24 kHz mono MP3
+_MAX_ATTEMPTS = 3
+_RETRY_DELAY_SECONDS = 0.6
+_MARKDOWN_CHARS = re.compile(r"[*_#`>|~]+")
+_WHITESPACE = re.compile(r"\s+")
+
+
+def _clean_text(text: str) -> str:
+    """Strip markdown symbols and control characters that should not be read."""
+    printable = "".join(ch for ch in text if ch.isprintable() or ch in "\n\t")
+    return _WHITESPACE.sub(" ", _MARKDOWN_CHARS.sub(" ", printable)).strip()
 
 
 def _speed_to_rate(speed: float) -> str:
@@ -92,9 +104,10 @@ class EdgeTTSBackend(TTSBackend):
         output_format: str = "mp3",
     ) -> TTSResult:
         voice = voice_id or DEFAULT_VOICE
-        mp3 = _run_coro(_synthesize_async(text, voice, _speed_to_rate(speed)))
-        if not mp3:
-            raise RuntimeError(f"edge-tts returned no audio for voice {voice!r}")
+        text = _clean_text(text)
+        if not text:
+            raise RuntimeError("edge-tts: nothing to say after cleaning the text")
+        mp3 = self._synthesize_with_retries(text, voice, _speed_to_rate(speed))
 
         audio, fmt = mp3, "mp3"
         if output_format == "wav":
@@ -108,6 +121,30 @@ class EdgeTTSBackend(TTSBackend):
             voice_id=voice,
             sample_rate=_SAMPLE_RATE,
             metadata={"backend": self.backend_id},
+        )
+
+    def _synthesize_with_retries(self, text: str, voice: str, rate: str) -> bytes:
+        """Call edge-tts, retrying transient "No audio was received" failures.
+
+        The Edge service occasionally drops a request. Retrying (the last time
+        at normal speed) almost always succeeds, and keeps the chat session
+        from losing its only voice backend after one hiccup.
+        """
+        last_error: Exception | None = None
+        for attempt in range(_MAX_ATTEMPTS):
+            attempt_rate = rate if attempt < _MAX_ATTEMPTS - 1 else "+0%"
+            try:
+                mp3 = _run_coro(_synthesize_async(text, voice, attempt_rate))
+                if mp3:
+                    return mp3
+                last_error = RuntimeError("edge-tts returned no audio")
+            except Exception as exc:  # network / service hiccups
+                last_error = exc
+            if attempt < _MAX_ATTEMPTS - 1:
+                time.sleep(_RETRY_DELAY_SECONDS * (attempt + 1))
+        raise RuntimeError(
+            f"edge-tts failed after {_MAX_ATTEMPTS} attempts "
+            f"(voice {voice!r}): {last_error}"
         )
 
     def available_voices(self) -> List[str]:

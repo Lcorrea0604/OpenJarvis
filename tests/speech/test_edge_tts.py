@@ -78,9 +78,36 @@ def test_synthesize_empty_audio_raises():
     async def fake(text, voice, rate):
         return b""
 
-    with patch.object(edge, "_synthesize_async", fake):
-        with pytest.raises(RuntimeError):
+    with (
+        patch.object(edge, "_synthesize_async", fake),
+        patch.object(edge, "_RETRY_DELAY_SECONDS", 0),
+    ):
+        with pytest.raises(RuntimeError, match="3 attempts"):
             edge.EdgeTTSBackend().synthesize("hola")
+
+
+def test_synthesize_retries_transient_failure():
+    calls = []
+
+    async def flaky(text, voice, rate):
+        calls.append(rate)
+        if len(calls) < 3:
+            raise RuntimeError("No audio was received.")
+        return b"mp3-ok"
+
+    with (
+        patch.object(edge, "_synthesize_async", flaky),
+        patch.object(edge, "_RETRY_DELAY_SECONDS", 0),
+    ):
+        result = edge.EdgeTTSBackend().synthesize("hola", speed=1.1)
+    assert result.audio == b"mp3-ok"
+    # Last attempt falls back to normal speed.
+    assert calls == ["+10%", "+10%", "+0%"]
+
+
+def test_clean_text_strips_markdown():
+    assert edge._clean_text("**Hola**  señor\n\n`ok`") == "Hola señor ok"
+    assert edge._clean_text("  ***  ") == ""
 
 
 def test_run_coro_inside_running_loop():
