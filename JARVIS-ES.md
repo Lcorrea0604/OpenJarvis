@@ -164,6 +164,8 @@ git merge upstream/main
 | `429` o "quota exceeded" (Gemini) | Llegaste al límite gratuito; espera un minuto, o hasta el día siguiente |
 | `404 NOT_FOUND ... no longer available` (Gemini) | Google retiró ese modelo. Usa el alias que siempre funciona: `uv run jarvis config set intelligence.default_model gemini-flash-lite-latest` |
 | `Mic error` o "Nothing heard" | Revisa los permisos del micrófono (paso 5). Habla más cerca o más fuerte |
+| `cublas64_12.dll is not found` | Whisper intentó usar la tarjeta NVIDIA sin CUDA instalado. Corre `uv run jarvis config set speech.device cpu` (los presets ya usan CPU) |
+| Avisos de `symlinks` o `HF_TOKEN` al iniciar | Son solo avisos de la descarga del modelo de Whisper; no afectan |
 | No se escucha la voz | Revisa que tengas internet (Edge TTS es en línea) y que el volumen no esté en silencio |
 | Responde en inglés | Verifica que corriste `jarvis init --preset jarvis-es-gratis --force` |
 

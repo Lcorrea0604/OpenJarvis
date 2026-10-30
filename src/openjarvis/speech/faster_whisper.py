@@ -77,6 +77,29 @@ class FasterWhisperBackend(SpeechBackend):
         )
         return fallback
 
+    def _switch_to_cpu(self, exc: Exception) -> bool:
+        """Fall back to CPU when the GPU runtime libraries are missing.
+
+        ``device="auto"`` picks CUDA whenever an NVIDIA GPU is present, but
+        inference then fails if the CUDA/cuBLAS/cuDNN DLLs are not installed
+        (common on Windows laptops). Returns True when a retry on CPU makes
+        sense.
+        """
+        if self._device == "cpu":
+            return False
+        message = str(exc).lower()
+        markers = ("cublas", "cudnn", "cuda", "libcudart", "cudart")
+        if not any(marker in message for marker in markers):
+            return False
+        logger.warning(
+            "faster-whisper could not use the GPU (%s); falling back to CPU", exc
+        )
+        self._device = "cpu"
+        if self._compute_type == "float16":
+            self._compute_type = "int8"
+        self._model = None
+        return True
+
     def _ensure_model(self) -> WhisperModel:
         """Lazy-load the Whisper model on first use."""
         if self._model is None:
@@ -87,11 +110,20 @@ class FasterWhisperBackend(SpeechBackend):
                 )
                 raise ImportError(self._last_error)
             compute_type = self._resolve_compute_type()
-            self._model = WhisperModel(
-                self._model_size,
-                device=self._device,
-                compute_type=compute_type,
-            )
+            try:
+                self._model = WhisperModel(
+                    self._model_size,
+                    device=self._device,
+                    compute_type=compute_type,
+                )
+            except Exception as exc:
+                if not self._switch_to_cpu(exc):
+                    raise
+                self._model = WhisperModel(
+                    self._model_size,
+                    device=self._device,
+                    compute_type=self._resolve_compute_type(),
+                )
         self._last_error = None
         return self._model
 
@@ -120,8 +152,15 @@ class FasterWhisperBackend(SpeechBackend):
                 if language:
                     kwargs["language"] = language
 
-                segments_iter, info = model.transcribe(tmp.name, **kwargs)
-                segments_list = list(segments_iter)
+                try:
+                    segments_iter, info = model.transcribe(tmp.name, **kwargs)
+                    segments_list = list(segments_iter)
+                except Exception as exc:
+                    if not self._switch_to_cpu(exc):
+                        raise
+                    model = self._ensure_model()
+                    segments_iter, info = model.transcribe(tmp.name, **kwargs)
+                    segments_list = list(segments_iter)
             finally:
                 try:
                     os.unlink(tmp.name)

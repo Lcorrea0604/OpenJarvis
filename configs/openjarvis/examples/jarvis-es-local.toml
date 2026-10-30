@@ -64,7 +64,7 @@ enabled = ["current_datetime", "web_search", "calculator", "think"]
 backend = "faster-whisper"
 model = "small"                       # "base" si va lento, "medium" si quieres más precisión
 language = "es"
-device = "auto"
+device = "cpu"                        # "cuda" solo si instalas CUDA 12 + cuDNN
 compute_type = "int8"                 # funciona bien en CPU
 # Voz: Edge TTS es gratis y sin clave (necesita internet). Voces peruanas:
 #   es-PE-AlexNeural (hombre)  ·  es-PE-CamilaNeural (mujer)
