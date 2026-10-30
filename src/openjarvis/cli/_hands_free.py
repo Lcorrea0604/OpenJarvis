@@ -165,7 +165,12 @@ class HandsFreeListener:
         command = extract_command(text, self._wake_word)
 
         if command is None and not awake:
-            return None  # background talk: ignore silently
+            # Not addressed to Jarvis. Show it dimmed so the user can tell the
+            # mic works and see how Whisper heard the wake word.
+            self._console.print(
+                f'[dim]Escuché (sin "Jarvis"): {_terminal_safe_text(text)}[/dim]'
+            )
+            return None
 
         request = text if command is None else command
         if is_exit_command(request):
@@ -216,6 +221,8 @@ class HandsFreeListener:
 
             if not wav_has_speech(audio):
                 continue
+
+            self._console.print("[dim]Procesando lo que escuché…[/dim]")
 
             try:
                 result = backend.transcribe(
