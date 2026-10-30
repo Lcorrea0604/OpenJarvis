@@ -226,3 +226,18 @@ def test_faster_whisper_non_cuda_error_is_not_swallowed():
         with pytest.raises(RuntimeError, match="corrupt audio"):
             backend.transcribe(b"fake audio bytes")
     assert backend._device == "auto"
+
+
+def test_faster_whisper_passes_prompt_and_hotwords():
+    seg = MagicMock(text=" Jarvis, qué hora es", start=0.0, end=1.0, avg_logprob=-0.1)
+    info = MagicMock(language="es", language_probability=0.99, duration=1.0)
+    model = MagicMock()
+    model.transcribe.return_value = ([seg], info)
+    with patch("openjarvis.speech.faster_whisper.WhisperModel", return_value=model):
+        backend = FasterWhisperBackend(model_size="small", device="cpu")
+        backend.transcribe(
+            b"fake", language="es", initial_prompt="Jarvis, hola.", hotwords="Jarvis"
+        )
+    kwargs = model.transcribe.call_args.kwargs
+    assert kwargs["initial_prompt"] == "Jarvis, hola."
+    assert kwargs["hotwords"] == "Jarvis"
