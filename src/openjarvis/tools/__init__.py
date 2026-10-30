@@ -18,6 +18,11 @@ except ImportError:
     pass
 
 try:
+    import openjarvis.tools.current_datetime  # noqa: F401
+except ImportError:
+    pass
+
+try:
     import openjarvis.tools.retrieval  # noqa: F401
 except ImportError:
     pass

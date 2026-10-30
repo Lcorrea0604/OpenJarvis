@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.10, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and platform_machine == 's390x' and sys_platform == 'linux'",
@@ -1797,6 +1797,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d2/1b/5b1964b0f1299aaca2b98300d73d972046ab70edb53c47674d6ace3c1bf1/dspy-3.4.0.tar.gz", hash = "sha256:4dea089c6bd1f8d314e1095e7f64b4b4ff64bb8a09549efee026c0a609f08c16", size = 887770, upload-time = "2026-09-25T04:04:25.439Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/17/96/31628d4231b5dd7edbe9eaf5c975d1055f4b79b337062a1f957dca6dd931/dspy-3.4.0-py3-none-any.whl", hash = "sha256:36de329ecdaf18e31977e26c61b587caa470a34f574f2fe6cb7f4c82bcbf97cc", size = 987510, upload-time = "2026-09-25T04:04:23.915Z" },
+]
+
+[[package]]
+name = "edge-tts"
+version = "7.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "certifi" },
+    { name = "tabulate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a3/ce/14e713ba774063e00444a091eb790539fe0d848a9d8df35fd81a7639a28e/edge_tts-7.3.1.tar.gz", hash = "sha256:ee1fabf911b9ea83b38ae93aee5619ee41eaf0b109fef6e65d797dc4ebf1f20f", size = 35843, upload-time = "2026-10-13T18:22:53.226Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/35/86/3b97d755992777d5a9ca0e45a8ec96cc9858b2d6dd8f65f3f688d60e8709/edge_tts-7.3.1-py3-none-any.whl", hash = "sha256:2a3c79d6235a7a736d681233823ce5492e829b43eb47beae49aa181237a8f9a4", size = 38908, upload-time = "2026-10-13T18:22:51.772Z" },
 ]
 
 [[package]]
@@ -5423,6 +5438,12 @@ voice = [
     { name = "sounddevice" },
     { name = "soundfile" },
 ]
+voice-edge = [
+    { name = "edge-tts" },
+    { name = "numpy" },
+    { name = "sounddevice" },
+    { name = "soundfile" },
+]
 
 [package.dev-dependencies]
 desktop-native = [
@@ -5453,6 +5474,7 @@ requires-dist = [
     { name = "docker", marker = "extra == 'mining-pearl-vllm'", specifier = ">=7.0" },
     { name = "docker", marker = "extra == 'sandbox-docker'", specifier = ">=7.0" },
     { name = "dspy", marker = "extra == 'learning-dspy'", specifier = ">=2.6" },
+    { name = "edge-tts", marker = "extra == 'voice-edge'", specifier = ">=7.0" },
     { name = "faiss-cpu", marker = "extra == 'memory-faiss'", specifier = ">=1.7" },
     { name = "fastapi", marker = "extra == 'desktop'", specifier = ">=0.110" },
     { name = "fastapi", marker = "extra == 'server'", specifier = ">=0.110" },
@@ -5483,6 +5505,7 @@ requires-dist = [
     { name = "numpy", marker = "extra == 'memory-faiss'", specifier = ">=1.24" },
     { name = "numpy", marker = "extra == 'speech'", specifier = ">=1.24" },
     { name = "numpy", marker = "extra == 'voice'", specifier = ">=1.24" },
+    { name = "numpy", marker = "extra == 'voice-edge'", specifier = ">=1.24" },
     { name = "nvidia-ml-py", specifier = ">=12.560.30" },
     { name = "onnxruntime", marker = "python_full_version < '3.11' and extra == 'desktop'", specifier = "<1.24" },
     { name = "onnxruntime", marker = "python_full_version < '3.11' and extra == 'speech'", specifier = "<1.24" },
@@ -5526,9 +5549,11 @@ requires-dist = [
     { name = "sounddevice", marker = "extra == 'desktop'", specifier = ">=0.5" },
     { name = "sounddevice", marker = "extra == 'speech'", specifier = ">=0.5" },
     { name = "sounddevice", marker = "extra == 'voice'", specifier = ">=0.5" },
+    { name = "sounddevice", marker = "extra == 'voice-edge'", specifier = ">=0.5" },
     { name = "soundfile", marker = "extra == 'desktop'", specifier = ">=0.12" },
     { name = "soundfile", marker = "extra == 'speech'", specifier = ">=0.12" },
     { name = "soundfile", marker = "extra == 'voice'", specifier = ">=0.12" },
+    { name = "soundfile", marker = "extra == 'voice-edge'", specifier = ">=0.12" },
     { name = "tavily-python", marker = "extra == 'tools-search'", specifier = ">=0.3" },
     { name = "textual", marker = "extra == 'dashboard'", specifier = ">=0.80" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
@@ -5549,7 +5574,7 @@ requires-dist = [
     { name = "zeus-apple-silicon", marker = "sys_platform == 'darwin' and extra == 'energy-apple'", specifier = ">=1.1.0" },
     { name = "zulip", marker = "extra == 'channel-zulip'", specifier = ">=0.9" },
 ]
-provides-extras = ["afm", "browser", "channel-discord", "channel-gmail", "channel-line", "channel-mastodon", "channel-messenger", "channel-nostr", "channel-reddit", "channel-rocketchat", "channel-slack", "channel-telegram", "channel-twilio", "channel-twitch", "channel-twitter", "channel-viber", "channel-xmpp", "channel-zulip", "dashboard", "desktop", "dev", "docs", "energy-all", "energy-amd", "energy-apple", "eval-sheets", "eval-wandb", "framework-comparison", "gpu-metrics", "inference-cloud", "inference-gemma", "inference-google", "inference-litellm", "inference-mlx", "inference-vllm", "learning-dspy", "learning-gepa", "media", "memory-bm25", "memory-colbert", "memory-faiss", "memory-pdf", "mining-pearl-cpu", "mining-pearl-vllm", "openhands", "orchestrator-training", "pdf", "sandbox-docker", "sandbox-wasm", "scheduler", "security-signing", "server", "speech", "speech-deepgram", "tools-search", "voice"]
+provides-extras = ["afm", "browser", "channel-discord", "channel-gmail", "channel-line", "channel-mastodon", "channel-messenger", "channel-nostr", "channel-reddit", "channel-rocketchat", "channel-slack", "channel-telegram", "channel-twilio", "channel-twitch", "channel-twitter", "channel-viber", "channel-xmpp", "channel-zulip", "dashboard", "desktop", "dev", "docs", "energy-all", "energy-amd", "energy-apple", "eval-sheets", "eval-wandb", "framework-comparison", "gpu-metrics", "inference-cloud", "inference-gemma", "inference-google", "inference-litellm", "inference-mlx", "inference-vllm", "learning-dspy", "learning-gepa", "media", "memory-bm25", "memory-colbert", "memory-faiss", "memory-pdf", "mining-pearl-cpu", "mining-pearl-vllm", "openhands", "orchestrator-training", "pdf", "sandbox-docker", "sandbox-wasm", "scheduler", "security-signing", "server", "speech", "speech-deepgram", "tools-search", "voice", "voice-edge"]
 
 [package.metadata.requires-dev]
 desktop-native = [{ name = "openjarvis-rust", directory = "rust/crates/openjarvis-python" }]
