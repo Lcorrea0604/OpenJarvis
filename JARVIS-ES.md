@@ -10,8 +10,9 @@ Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asist
 | 2 | Voz completa: micrófono → Whisper → cerebro → voz peruana (Edge TTS), y conoce la fecha y la hora | ✅ listo |
 | 3a | Manos libres: escucha siempre y se activa con "Jarvis"; acceso directo y arranque con Windows | ✅ listo |
 | 3b | HUD animado estilo Iron Man | ⏳ |
-| 4 | Herramientas de Windows: abrir apps, archivos, Gmail y Calendar | ⏳ |
-| 5 | Memoria de largo plazo y perfil del usuario | ⏳ |
+| 4 | Herramientas de Windows: abrir apps, webs y carpetas, estado del PC, volumen y música | ✅ listo |
+| 4b | Gmail y Google Calendar | ⏳ |
+| 5 | Memoria y perfil del usuario (`MEMORY.md` y `USER.md`, solo en tu PC) | ✅ listo |
 | — | Migración a modelo local con Ollama | 📋 planificada (ver abajo) |
 
 ## Elige el cerebro
@@ -131,6 +132,27 @@ powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -A
 - Con `-AlIniciar`, Jarvis también arranca solo, minimizado, cada vez que enciendes Windows.
 - Si quieres solo el ícono, sin arranque automático, quita `-AlIniciar` del comando.
 - Para dejar de iniciarlo con Windows: `powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -QuitarInicio`.
+
+### 7. Qué puede hacer Jarvis en tu PC
+
+| Pídele… | Qué hace |
+|---|---|
+| "Jarvis, abre YouTube" / "abre Gmail" / "abre sunat.gob.pe" | Abre la web en tu navegador |
+| "Jarvis, abre Excel" / "la calculadora" / "Spotify" / "configuración del wifi" | Abre la aplicación |
+| "Jarvis, abre mis descargas" / "la carpeta documentos" | Abre la carpeta |
+| "Jarvis, ¿cómo está la batería?" / "¿cuánta RAM estoy usando?" | Lee el estado del PC |
+| "Jarvis, sube el volumen" / "silencia" / "pausa la música" / "siguiente canción" | Controla el volumen y la música |
+
+Por seguridad, Jarvis **no** ejecuta comandos ni borra archivos: solo abre lo que ya tienes instalado, páginas web y tus carpetas personales. Si una app no la encuentra por su nombre, dile el nombre tal como aparece en el menú Inicio.
+
+### 8. Memoria: que Jarvis te conozca
+
+- Dile cosas como *"Jarvis, recuerda que me llamo Russo y trabajo en soporte TI"* o *"recuerda que prefiero respuestas cortas"*.
+- Los datos sobre ti se guardan en `~\.openjarvis\USER.md`, y lo que le pides recordar en `~\.openjarvis\MEMORY.md`.
+- Los dos archivos quedan **solo en tu PC**: nunca se suben a GitHub.
+- Lo que aprende lo usa **desde la siguiente vez que lo abres**.
+- También puedes escribir tu perfil a mano: copia `configs\openjarvis\USER.example.md` a `C:\Users\LENOVO\.openjarvis\USER.md` y complétalo.
+- No guarda contraseñas ni datos bancarios, aunque se lo pidas.
 
 ## Migración futura a Ollama (modelo local)
 

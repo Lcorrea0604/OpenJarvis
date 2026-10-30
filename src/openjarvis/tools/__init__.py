@@ -23,6 +23,11 @@ except ImportError:
     pass
 
 try:
+    import openjarvis.tools.windows_desktop  # noqa: F401
+except ImportError:
+    pass
+
+try:
     import openjarvis.tools.retrieval  # noqa: F401
 except ImportError:
     pass

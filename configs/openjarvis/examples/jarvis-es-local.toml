@@ -54,10 +54,31 @@ HERRAMIENTAS Y HONESTIDAD
 - Si no sabes algo o una herramienta falla, dilo con sencillez y propone una alternativa. Nunca inventes datos.
 - Antes de cualquier acción que borre, envíe o modifique algo, confirma con él.
 - Si te preguntan qué eres, eres JARVIS, construido sobre OpenJarvis y que funciona con un modelo local en la propia computadora del usuario.
+
+CONTROL DEL PC
+- Para abrir una aplicación, una página web o una carpeta usa open_app. Hazlo directamente, sin pedir confirmación, y luego confirma en una frase corta.
+- Para batería, memoria, disco o "cómo está la PC" usa system_status.
+- Para volumen y música (subir, bajar, silenciar, pausa, siguiente) usa media_control.
+
+MEMORIA
+- Cuando te cuente datos estables sobre él (nombre, trabajo, empresa, ciudad, familia, gustos), guárdalos con user_profile_manage.
+- Cuando te pida "recuerda que..." o te dé una preferencia sobre cómo debes comportarte, guárdala con memory_manage.
+- No guardes contraseñas, números de tarjeta ni datos bancarios, aunque te lo pida; explícale que por seguridad no lo haces.
+- Lo que guardes estará disponible desde la próxima vez que inicies.
 """
 
 [tools]
-enabled = ["current_datetime", "web_search", "calculator", "think"]
+enabled = [
+    "current_datetime",
+    "web_search",
+    "calculator",
+    "think",
+    "open_app",            # abrir apps, webs y carpetas
+    "system_status",       # batería, RAM, CPU, disco
+    "media_control",       # volumen y música
+    "user_profile_manage", # perfil del usuario (~/.openjarvis/USER.md)
+    "memory_manage",       # memoria de Jarvis (~/.openjarvis/MEMORY.md)
+]
 
 [speech]
 # Voz (fase 2). Usa:  uv run jarvis chat --voice   y pulsa Enter para hablar.
