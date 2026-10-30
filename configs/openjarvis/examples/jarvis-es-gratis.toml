@@ -17,8 +17,12 @@
 default = "cloud"                       # API de Google, plan gratuito
 
 [intelligence]
-default_model = "gemini-2.5-flash"      # Flash: incluido en el plan gratuito
-# default_model = "gemini-3-flash-preview"  # más nuevo; verifica que siga en el plan gratis
+# Alias que Google apunta siempre al Flash-Lite más reciente: no se rompe cuando
+# retiran un modelo, y tiene el cupo gratuito más alto (aprox. 500 consultas al día).
+default_model = "gemini-flash-lite-latest"
+# default_model = "gemini-flash-latest"  # más inteligente, pero solo ~20 consultas/día gratis
+# Para ver los modelos que te habilita Google (PowerShell):
+#   (irm "https://generativelanguage.googleapis.com/v1beta/models?key=$env:GEMINI_API_KEY").models.name
 temperature = 0.7
 max_tokens = 1024
 

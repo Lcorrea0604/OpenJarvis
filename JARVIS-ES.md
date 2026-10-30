@@ -19,7 +19,7 @@ Jarvis puede funcionar con tres cerebros distintos. La personalidad y las herram
 
 | Preset | Cerebro | Costo | Privacidad | Calidad en español |
 |---|---|---|---|---|
-| `jarvis-es-gratis` | Gemini 2.5 Flash (Google) | Gratis, con límites diarios | Google puede usar los chats del plan gratis | Muy buena |
+| `jarvis-es-gratis` | Gemini Flash-Lite (Google) | Gratis, aprox. 500 consultas al día | Google puede usar los chats del plan gratis | Muy buena |
 | `jarvis-es` | Claude Sonnet (Anthropic) | De pago, aprox. USD 0,01–0,03 por pregunta | No se usan para entrenar | Excelente |
 | `jarvis-es-local` | Qwen 3.5 en Ollama (tu PC) | Gratis | Total: nada sale de tu PC | Aceptable; depende de tu hardware |
 
@@ -69,7 +69,7 @@ echo $env:GEMINI_API_KEY.Substring(0,6)
 echo $env:GEMINI_API_KEY.Length
 ```
 
-Las claves de Gemini empiezan con `AIza` y tienen 39 caracteres.
+Una clave de Gemini válida tiene entre 39 y 60 caracteres. Si sale 0 o da error, la clave no quedó guardada.
 
 > Las claves quedan guardadas solo en tu Windows. Nunca las pegues en el código ni las subas a GitHub.
 
@@ -145,6 +145,7 @@ git merge upstream/main
 | "No inference engine available" | Corre `uv sync --extra inference-cloud --extra inference-google` y revisa la clave en una terminal nueva |
 | `401 invalid x-api-key` (Claude) o `API key not valid` (Gemini) | La clave está mal guardada: repite el paso 3 |
 | `429` o "quota exceeded" (Gemini) | Llegaste al límite gratuito; espera un minuto, o hasta el día siguiente |
+| `404 NOT_FOUND ... no longer available` (Gemini) | Google retiró ese modelo. Usa el alias que siempre funciona: `uv run jarvis config set intelligence.default_model gemini-flash-lite-latest` |
 | Responde en inglés | Verifica que corriste `jarvis init --preset jarvis-es-gratis --force` |
 
 Cualquier otro error: corre `uv run jarvis doctor` y comparte la salida.
