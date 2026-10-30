@@ -1,6 +1,6 @@
 # JARVIS — Avance y pasos a seguir
 
-_Última actualización: viernes 30 de octubre de 2026, madrugada (Lima), al cerrar la sesión nocturna._
+_Última actualización: viernes 30 de octubre de 2026, mañana (Lima)._
 
 ## Resumen en una línea
 
@@ -13,12 +13,13 @@ Jarvis conversa en español por texto y por voz, se activa diciendo "Jarvis" sin
 | 1 | Chat por texto en español, personalidad de Jarvis, búsqueda web y calculadora | ✅ en `main` | #1 |
 | — | Cerebro gratis con Gemini (`jarvis-es-gratis`) y plan de migración a Ollama | ✅ en `main` | #2, #3 |
 | 2 | Voz: Whisper (oído local) + Edge TTS (voz peruana) + fecha y hora | ✅ en `main` | #4 |
-| 2.1 | Arreglos de voz: Whisper en CPU, reintentos de voz, contexto de Perú | 🟡 en el PR nocturno | #5 → nocturno |
-| 3a | Manos libres con "Jarvis", acceso directo y arranque con Windows | 🟡 en el PR nocturno | #6 → nocturno |
-| 3b | HUD animado estilo Iron Man | 🟡 en el PR nocturno | nocturno |
-| 4 | Herramientas de Windows: abrir apps, webs y carpetas; estado del PC; volumen y música | 🟡 en el PR nocturno | nocturno |
-| 5 | Memoria y perfil del usuario (`USER.md` y `MEMORY.md`, solo en tu PC) | 🟡 en el PR nocturno | nocturno |
-| 4b | Gmail y Google Calendar | 📋 siguiente | — |
+| 2.1 | Arreglos de voz: Whisper en CPU, reintentos de voz, contexto de Perú | ✅ en `main` | #7 |
+| 3a | Manos libres con "Jarvis" (reconoce "ya lo viste"), acceso directo y arranque con Windows | ✅ en `main` | #7, #8, #9 |
+| 3b | HUD animado estilo Iron Man | ✅ en `main` | #7 |
+| 4 | Herramientas de Windows: abrir apps, webs y carpetas; estado del PC; volumen y música | ✅ en `main` | #7 |
+| 5 | Memoria y perfil del usuario (`USER.md` y `MEMORY.md`, solo en tu PC) | ✅ en `main` | #7 |
+| 4b | Trello por voz: resumen de tableros, vencimientos, crear, mover y comentar tarjetas | 🟡 PR abierto | #10 |
+| 4c | Gmail y Google Calendar | 📋 siguiente | — |
 | — | Migración a Ollama local (tu PC tiene 24 GB de RAM, alcanza para `qwen3.5:9b`) | 📋 planificada | — |
 
 ## Cómo está configurado tu Jarvis hoy
@@ -70,6 +71,10 @@ Jarvis conversa en español por texto y por voz, se activa diciendo "Jarvis" sin
 - **GPU:** tu laptop tiene NVIDIA. Si instalas CUDA 12 y cuDNN, Whisper transcribe más rápido (`speech.device = "cuda"`). Es opcional.
 - **Voz 100 % local:** Kokoro (`em_alex`) evita depender de internet, pero exige instalar PyTorch y espeak-ng.
 - **Privacidad:** el repo es público. Tus datos personales van solo en `~\.openjarvis\USER.md`, que no se sube a GitHub.
+
+## Trello (30 de octubre)
+
+Jarvis ya puede trabajar con tus tableros de Trello: "Jarvis, ¿qué tengo vencido esta semana?", "Jarvis, mueve la tarjeta del switch a En curso". Para activarlo, acepta el PR #10, haz `git pull` y sigue la sección 9 de `JARVIS-ES.md`: sacar la API Key y el token, y correr `scripts\windows\configurar-trello.ps1`. Antes de crear, mover, comentar o completar una tarjeta, Jarvis siempre te pide confirmación.
 
 ## Novedades del trabajo nocturno
 

@@ -61,6 +61,12 @@ CONTROL DEL PC
 - Para batería, memoria, disco o "cómo está la PC" usa system_status.
 - Para volumen y música (subir, bajar, silenciar, pausa, siguiente) usa media_control.
 
+TRELLO
+- Usa la herramienta trello para todo lo relacionado con sus proyectos, tareas, pendientes y tableros.
+- Para leer (resumen del tablero, mis tarjetas, qué vence, buscar) actúa directamente.
+- Para crear, mover, comentar o completar tarjetas, repite en una frase lo que vas a hacer y espera su "sí" antes de ejecutarlo.
+- Al resumir por voz, menciona primero lo vencido y lo que está en curso; no leas listas larguísimas: da cantidades y los 3 o 4 más importantes.
+
 MEMORIA
 - Cuando te cuente datos estables sobre él (nombre, trabajo, empresa, ciudad, familia, gustos), guárdalos con user_profile_manage.
 - Cuando te pida "recuerda que..." o te dé una preferencia sobre cómo debes comportarte, guárdala con memory_manage.
@@ -79,6 +85,7 @@ enabled = [
     "media_control",       # volumen y música
     "user_profile_manage", # perfil del usuario (~/.openjarvis/USER.md)
     "memory_manage",       # memoria de Jarvis (~/.openjarvis/MEMORY.md)
+    "trello",              # tableros de Trello (requiere configurar-trello.ps1)
 ]
 
 [speech]
