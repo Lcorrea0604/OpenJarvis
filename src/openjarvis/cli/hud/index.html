@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --abyss: #021018;
+    --reactor: #6fe7f7;
+    --ice: #e4fbff;
+    --line: #16404d;
+    --gold: #f2b64a;
+    --alert: #ff5a5f;
+    --muted: #7fa9b3;
+    --accent: var(--reactor);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: radial-gradient(ellipse at 50% 45%, #06212d 0%, var(--abyss) 62%);
+    color: var(--ice);
+    font-family: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  body[data-state="thinking"] { --accent: var(--gold); }
+  body[data-state="speaking"] { --accent: var(--ice); }
+  body[data-state="error"] { --accent: var(--alert); }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: block;
+  }
+
+  .clock {
+    position: fixed;
+    top: clamp(16px, 4vh, 40px);
+    left: clamp(16px, 4vw, 48px);
+    line-height: 1.1;
+  }
+  .clock time {
+    display: block;
+    font-weight: 300;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    letter-spacing: 0.02em;
+    color: var(--ice);
+  }
+  .clock span {
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+
+  .state {
+    position: fixed;
+    top: clamp(16px, 4vh, 40px);
+    right: clamp(16px, 4vw, 48px);
+    text-align: right;
+    font-size: clamp(1rem, 2.2vw, 1.35rem);
+    font-weight: 600;
+    color: var(--accent);
+    transition: color 400ms ease;
+  }
+  .state small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .dialogue {
+    position: fixed;
+    left: 50%;
+    bottom: clamp(16px, 6vh, 56px);
+    transform: translateX(-50%);
+    width: min(60ch, calc(100vw - 32px));
+    text-align: center;
+  }
+  .dialogue p { margin: 0; }
+  .heard {
+    font-size: 1rem;
+    color: var(--muted);
+    min-height: 1.5em;
+  }
+  .reply {
+    margin-top: 10px !important;
+    font-size: clamp(1.05rem, 2.1vw, 1.35rem);
+    line-height: 1.5;
+    color: var(--ice);
+    max-height: 7.5em;
+    overflow: hidden;
+  }
+
+  .offline {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin-top: 30vmin;
+    font-size: 0.95rem;
+    color: var(--alert);
+    display: none;
+  }
+  body.disconnected .offline { display: block; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .state { transition: none; }
+  }
+</style>
+</head>
+<body data-state="idle">
+<canvas id="orb" aria-hidden="true"></canvas>
+
+<div class="clock">
+  <time id="time">--:--</time>
+  <span id="date"></span>
+</div>
+
+<div class="state" role="status" aria-live="polite">
+  <span id="state-label">En espera</span>
+  <small id="state-hint">Di "Jarvis" para empezar</small>
+</div>
+
+<div class="dialogue">
+  <p class="heard" id="heard"></p>
+  <p class="reply" id="reply"></p>
+</div>
+
+<p class="offline">Se perdió la conexión con Jarvis. Reintentando…</p>
+
+<script>
+(() => {
+  const STATES = {
+    idle:      { label: "En espera",  hint: 'Di "Jarvis" para empezar' },
+    awake:     { label: "Te escucho", hint: "Puedes seguir hablando" },
+    listening: { label: "Te escucho", hint: "Habla con normalidad" },
+    thinking:  { label: "Pensando",   hint: "Un momento, señor" },
+    speaking:  { label: "Hablando",   hint: "" },
+    error:     { label: "Algo falló", hint: "Revisa la ventana de Jarvis" },
+  };
+
+  const body = document.body;
+  const labelEl = document.getElementById("state-label");
+  const hintEl = document.getElementById("state-hint");
+  const heardEl = document.getElementById("heard");
+  const replyEl = document.getElementById("reply");
+  const timeEl = document.getElementById("time");
+  const dateEl = document.getElementById("date");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let state = "idle";
+  let level = 0;          // smoothed 0..1 microphone level
+  let targetLevel = 0;
+
+  function setState(next) {
+    if (!STATES[next]) return;
+    state = next;
+    body.dataset.state = next;
+    labelEl.textContent = STATES[next].label;
+    hintEl.textContent = STATES[next].hint;
+  }
+
+  // ---- clock ----
+  const dateFmt = new Intl.DateTimeFormat("es-PE", { weekday: "long", day: "numeric", month: "long" });
+  function tick() {
+    const now = new Date();
+    timeEl.textContent = now.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const d = dateFmt.format(now);
+    dateEl.textContent = d.charAt(0).toUpperCase() + d.slice(1);
+  }
+  tick();
+  setInterval(tick, 10_000);
+
+  // ---- events from Jarvis ----
+  function connect() {
+    const es = new EventSource("/events");
+    es.onopen = () => body.classList.remove("disconnected");
+    es.onmessage = (ev) => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch { return; }
+      if (msg.type === "state") setState(msg.state);
+      if (msg.type === "level") targetLevel = Math.max(0, Math.min(1, msg.value));
+      if (msg.type === "heard") heardEl.textContent = msg.text ? "“" + msg.text + "”" : "";
+      if (msg.type === "reply") replyEl.textContent = msg.text || "";
+    };
+    es.onerror = () => {
+      body.classList.add("disconnected");
+      es.close();
+      setTimeout(connect, 2000);
+    };
+  }
+  connect();
+
+  // ---- the reactor ----
+  const canvas = document.getElementById("orb");
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  const css = getComputedStyle(document.documentElement);
+  const COLORS = {
+    reactor: css.getPropertyValue("--reactor").trim(),
+    ice: css.getPropertyValue("--ice").trim(),
+    line: css.getPropertyValue("--line").trim(),
+    gold: css.getPropertyValue("--gold").trim(),
+    alert: css.getPropertyValue("--alert").trim(),
+    abyss: css.getPropertyValue("--abyss").trim(),
+  };
+  function accent() {
+    return { thinking: COLORS.gold, speaking: COLORS.ice, error: COLORS.alert }[state] || COLORS.reactor;
+  }
+
+  function arc(cx, cy, r, a0, a1, width, color, alpha) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  let t0 = performance.now();
+  function frame(now) {
+    const t = (now - t0) / 1000;
+    level += (targetLevel - level) * 0.25;
+    if (state !== "listening" && state !== "awake") targetLevel *= 0.9;
+
+    ctx.clearRect(0, 0, W, H);
+    // Keep the outer ring (1.74 R) clear of the dialogue at the bottom.
+    const R = Math.min(W * 0.24, H * 0.19);
+    const cx = W / 2, cy = H * 0.42;
+    const col = accent();
+    const speed = reduceMotion ? 0 : 1;
+
+    // breathing / reactive energy
+    let energy = 0.15 + 0.08 * Math.sin(t * 1.2);
+    if (state === "listening" || state === "awake") energy = 0.25 + level * 0.9;
+    if (state === "thinking") energy = 0.45 + 0.1 * Math.sin(t * 6);
+    if (state === "speaking") energy = 0.45 + 0.35 * Math.abs(Math.sin(t * 7.3) * Math.sin(t * 3.1));
+
+    // outer tick ring: 120 ticks, the ones near the "sweep" light up
+    const ticks = 120;
+    const sweep = (t * 0.6 * speed) % (Math.PI * 2);
+    for (let i = 0; i < ticks; i++) {
+      const a = (i / ticks) * Math.PI * 2;
+      const d = Math.abs(((a - sweep + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+      const lit = Math.max(0, 1 - d / 1.2);
+      const long = i % 10 === 0;
+      const r0 = R * 1.62, r1 = R * (long ? 1.74 : 1.68);
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.strokeStyle = lit > 0.05 ? col : COLORS.line;
+      ctx.globalAlpha = 0.25 + lit * 0.75;
+      ctx.lineWidth = long ? 2 : 1;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // segmented rings rotating in opposite directions
+    const segs = 6;
+    for (let i = 0; i < segs; i++) {
+      const a = (i / segs) * Math.PI * 2 + t * 0.35 * speed;
+      arc(cx, cy, R * 1.45, a, a + 0.62, 3, col, 0.55);
+    }
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2 - t * (state === "thinking" ? 1.8 : 0.5) * speed;
+      arc(cx, cy, R * 1.28, a, a + 1.4, 1.5, col, 0.7);
+    }
+    arc(cx, cy, R * 1.12, 0, Math.PI * 2, 1, COLORS.line, 0.9);
+
+    // voice ring: radial bars driven by level / speech
+    const bars = 72;
+    for (let i = 0; i < bars; i++) {
+      const a = (i / bars) * Math.PI * 2;
+      const wobble = 0.5 + 0.5 * Math.sin(a * 5 + t * 4 * speed) * Math.sin(a * 3 - t * 2.3 * speed);
+      const h = R * 0.06 + R * 0.28 * energy * wobble;
+      const r0 = R * 0.98;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      ctx.lineTo(cx + Math.cos(a) * (r0 - h), cy + Math.sin(a) * (r0 - h));
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = 0.35 + 0.6 * energy;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // core glow
+    const coreR = R * (0.42 + energy * 0.12);
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR * 2.2);
+    g.addColorStop(0, col);
+    g.addColorStop(0.25, col + "cc");
+    g.addColorStop(0.55, col + "33");
+    g.addColorStop(1, col + "00");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, coreR * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // triangular core, a nod to the Mark VI reactor
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-Math.PI / 2 + (state === "thinking" ? t * 0.8 * speed : 0));
+    ctx.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI * 2;
+      ctx.lineTo(Math.cos(a) * coreR * 0.75, Math.sin(a) * coreR * 0.75);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = COLORS.abyss;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

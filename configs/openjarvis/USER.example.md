@@ -1,0 +1,5 @@
+- Me llamo (tu nombre). Prefiero que me digas "señor".
+- Vivo en Lima, Perú.
+- Trabajo en (tu empresa o rubro), haciendo (tu rol).
+- Mis herramientas de trabajo habituales son (por ejemplo: Excel, AnyDesk, WhatsApp).
+- Cosas que me gusta que recuerdes: (por ejemplo: mi equipo de fútbol, mis horarios).

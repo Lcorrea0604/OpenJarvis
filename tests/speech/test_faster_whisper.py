@@ -183,3 +183,46 @@ def test_faster_whisper_supported_formats():
         assert "wav" in formats
         assert "mp3" in formats
         assert "webm" in formats
+
+
+def test_faster_whisper_falls_back_to_cpu_when_cuda_libs_missing():
+    """A missing cuBLAS DLL on a GPU machine retries the transcription on CPU."""
+    gpu_model = MagicMock()
+    gpu_model.transcribe.side_effect = RuntimeError(
+        "Library cublas64_12.dll is not found or cannot be loaded"
+    )
+
+    cpu_segment = MagicMock()
+    cpu_segment.text = " Hola Jarvis"
+    cpu_segment.start = 0.0
+    cpu_segment.end = 1.0
+    cpu_segment.avg_logprob = -0.2
+    cpu_info = MagicMock(language="es", language_probability=0.99, duration=1.0)
+    cpu_model = MagicMock()
+    cpu_model.transcribe.return_value = ([cpu_segment], cpu_info)
+
+    with patch(
+        "openjarvis.speech.faster_whisper.WhisperModel",
+        side_effect=[gpu_model, cpu_model],
+    ) as ctor:
+        backend = FasterWhisperBackend(
+            model_size="small", device="auto", compute_type="float16"
+        )
+        result = backend.transcribe(b"fake audio bytes", language="es")
+
+    assert result.text == "Hola Jarvis"
+    assert ctor.call_args_list[-1].kwargs["device"] == "cpu"
+    assert backend._device == "cpu"
+    assert backend._compute_type == "int8"
+
+
+def test_faster_whisper_non_cuda_error_is_not_swallowed():
+    """Errors unrelated to the GPU runtime still propagate."""
+    model = MagicMock()
+    model.transcribe.side_effect = RuntimeError("corrupt audio")
+
+    with patch("openjarvis.speech.faster_whisper.WhisperModel", return_value=model):
+        backend = FasterWhisperBackend(model_size="small", device="auto")
+        with pytest.raises(RuntimeError, match="corrupt audio"):
+            backend.transcribe(b"fake audio bytes")
+    assert backend._device == "auto"
