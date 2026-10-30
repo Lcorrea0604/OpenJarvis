@@ -11,7 +11,8 @@ Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asist
 | 3a | Manos libres: escucha siempre y se activa con "Jarvis"; acceso directo y arranque con Windows | ✅ listo |
 | 3b | HUD animado estilo Iron Man (orbe que reacciona al escuchar, pensar y hablar) | ✅ listo |
 | 4 | Herramientas de Windows: abrir apps, webs y carpetas, estado del PC, volumen y música | ✅ listo |
-| 4b | Gmail y Google Calendar | ⏳ |
+| 4b | Trello: leer y actualizar tus tableros por voz | ✅ listo |
+| 4c | Gmail y Google Calendar | ⏳ |
 | 5 | Memoria y perfil del usuario (`MEMORY.md` y `USER.md`, solo en tu PC) | ✅ listo |
 | — | Migración a modelo local con Ollama | 📋 planificada (ver abajo) |
 
@@ -164,6 +165,33 @@ Por seguridad, Jarvis **no** ejecuta comandos ni borra archivos: solo abre lo qu
 - Lo que aprende lo usa **desde la siguiente vez que lo abres**.
 - También puedes escribir tu perfil a mano: copia `configs\openjarvis\USER.example.md` a `C:\Users\LENOVO\.openjarvis\USER.md` y complétalo.
 - No guarda contraseñas ni datos bancarios, aunque se lo pidas.
+
+### 9. Trello: tus proyectos por voz
+
+**Configuración (una sola vez):**
+1. Abre https://trello.com/power-ups/admin y crea una integración con **New**. Ponle de nombre "Jarvis" y elige tu espacio de trabajo. Copia la **API Key**.
+2. En la misma página, haz clic en el enlace **Token** (junto a la API Key), pulsa **Permitir** y copia el token.
+3. En PowerShell, dentro de `Desktop\Jarvis`:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\windows\configurar-trello.ps1
+   ```
+   Pega la API Key y el token cuando te los pida. Al final elige el tablero que Jarvis usará por defecto.
+4. Cierra Jarvis y ábrelo de nuevo.
+
+**Qué le puedes pedir:**
+
+| Dile… | Qué hace |
+|---|---|
+| "Jarvis, ¿cómo va el tablero de GLOVESA?" | Resume las listas y las tarjetas |
+| "Jarvis, ¿qué tengo vencido o por vencer esta semana?" | Lista lo vencido y lo próximo |
+| "Jarvis, ¿qué tarjetas tengo asignadas?" | Tus tarjetas en todos los tableros |
+| "Jarvis, busca la tarjeta del switch" | Busca por nombre |
+| "Jarvis, crea una tarjeta 'Revisar UPS' en Backlog" | La crea (antes te pide confirmación) |
+| "Jarvis, mueve 'Inventario de laptops' a En revisión" | La mueve (antes te pide confirmación) |
+| "Jarvis, comenta en la tarjeta del switch que falta el cable" | Agrega un comentario (con confirmación) |
+| "Jarvis, marca como completada la tarjeta del cableado" | Marca el vencimiento como cumplido (con confirmación) |
+
+La API Key y el token quedan guardados solo en tu Windows, como variables de entorno. Para desconectar a Jarvis de Trello, revoca el token en https://trello.com/my/account → Aplicaciones.
 
 ## Migración futura a Ollama (modelo local)
 

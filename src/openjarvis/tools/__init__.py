@@ -28,6 +28,11 @@ except ImportError:
     pass
 
 try:
+    import openjarvis.tools.trello_tool  # noqa: F401
+except ImportError:
+    pass
+
+try:
     import openjarvis.tools.retrieval  # noqa: F401
 except ImportError:
     pass
