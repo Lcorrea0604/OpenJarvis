@@ -1,61 +1,83 @@
 # JARVIS en español
 
-Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asistente personal en español con la personalidad de Jarvis. Usa a Claude (Anthropic) como cerebro y se puede usar por texto y por voz.
+Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asistente personal en español con la personalidad de Jarvis. Se puede usar por texto y por voz.
 
 ## Hoja de ruta
 
 | Fase | Qué incluye | Estado |
 |---|---|---|
-| 1 | Chat por texto en español, personalidad de Jarvis, Claude como cerebro y búsqueda web | ✅ listo |
-| 2 | Voz completa: micrófono → Whisper → Claude → voz | ⏳ |
+| 1 | Chat por texto en español, personalidad de Jarvis y búsqueda web | ✅ listo |
+| 2 | Voz completa: micrófono → Whisper → cerebro → voz | ⏳ |
 | 3 | Palabra de activación "Jarvis" y HUD animado estilo Iron Man | ⏳ |
 | 4 | Herramientas de Windows: abrir apps, archivos, Gmail y Calendar | ⏳ |
 | 5 | Memoria de largo plazo y perfil del usuario | ⏳ |
+| — | Migración a modelo local con Ollama | 📋 planificada (ver abajo) |
 
-## Instalación en Windows (fase 1)
+## Elige el cerebro
 
-### 1. Instalar OpenJarvis desde este fork
+Jarvis puede funcionar con tres cerebros distintos. La personalidad y las herramientas son las mismas en los tres; solo cambia quién piensa.
 
-Abre PowerShell en la carpeta del repo y ejecuta:
+| Preset | Cerebro | Costo | Privacidad | Calidad en español |
+|---|---|---|---|---|
+| `jarvis-es-gratis` | Gemini 2.5 Flash (Google) | Gratis, con límites diarios | Google puede usar los chats del plan gratis | Muy buena |
+| `jarvis-es` | Claude Sonnet (Anthropic) | De pago, aprox. USD 0,01–0,03 por pregunta | No se usan para entrenar | Excelente |
+| `jarvis-es-local` | Qwen 3.5 en Ollama (tu PC) | Gratis | Total: nada sale de tu PC | Aceptable; depende de tu hardware |
+
+**Preset actual en uso: `jarvis-es-gratis`.**
+
+Cambiar de cerebro es un solo comando, `uv run jarvis init --preset <nombre> --force`, y luego hay que reiniciar Jarvis.
+
+## Instalación en Windows
+
+### 1. Programas base (una sola vez)
+
+```powershell
+winget install --id Git.Git -e
+winget install --id astral-sh.uv -e
+```
+
+Cierra PowerShell y ábrelo de nuevo.
+
+### 2. Descargar el repo e instalar
 
 ```powershell
 cd $HOME\Desktop\Jarvis
-irm https://astral.sh/uv/install.ps1 | iex   # instala uv (gestor de Python), solo la primera vez
+git clone https://github.com/Lcorrea0604/OpenJarvis.git .    # solo la primera vez
+git pull                                                     # para traer cambios nuevos
+uv sync --extra inference-cloud --extra inference-google
 ```
 
-Cierra PowerShell, ábrelo de nuevo y sigue:
+### 3. Guardar la clave de API
+
+Usa siempre este método, que te pide la clave al correrlo. Así no tienes que editar el comando:
+
+```powershell
+$k = Read-Host "Pega tu clave"
+[Environment]::SetEnvironmentVariable("GEMINI_API_KEY", $k.Trim(), "User")
+```
+
+| Preset | Variable | Dónde se saca la clave |
+|---|---|---|
+| `jarvis-es-gratis` | `GEMINI_API_KEY` | https://aistudio.google.com → Get API key (gratis, sin tarjeta) |
+| `jarvis-es` | `ANTHROPIC_API_KEY` | https://console.anthropic.com → API Keys (necesita créditos) |
+| `jarvis-es-local` | ninguna | — |
+
+Cierra PowerShell y ábrelo de nuevo. Luego verifica que la clave quedó guardada:
+
+```powershell
+echo $env:GEMINI_API_KEY.Substring(0,6)
+echo $env:GEMINI_API_KEY.Length
+```
+
+Las claves de Gemini empiezan con `AIza` y tienen 39 caracteres.
+
+> Las claves quedan guardadas solo en tu Windows. Nunca las pegues en el código ni las subas a GitHub.
+
+### 4. Activar el preset y hablar con Jarvis
 
 ```powershell
 cd $HOME\Desktop\Jarvis
-uv sync --extra inference-cloud
-```
-
-Este comando crea el entorno de Python e instala todo, incluido el conector con Claude (`inference-cloud`). La primera vez tarda unos minutos.
-
-### 2. Configurar tu API key de Anthropic
-
-Saca la clave en https://console.anthropic.com → **API Keys**. Luego, en PowerShell:
-
-```powershell
-setx ANTHROPIC_API_KEY "sk-ant-TU-CLAVE-AQUI"
-```
-
-Cierra y vuelve a abrir PowerShell para que la variable se cargue.
-
-> La clave queda guardada solo en tu Windows. Nunca la pegues en el código ni la subas a GitHub.
-
-### 3. Activar el preset de Jarvis en español
-
-```powershell
-cd $HOME\Desktop\Jarvis
-uv run jarvis init --preset jarvis-es --force
-```
-
-Este comando copia la configuración a `C:\Users\<tu-usuario>\.openjarvis\config.toml`.
-
-### 4. Hablar con Jarvis
-
-```powershell
+uv run jarvis init --preset jarvis-es-gratis --force
 uv run jarvis chat
 ```
 
@@ -65,17 +87,47 @@ Prueba, por ejemplo:
 - `¿Cuál es el tipo de cambio del dólar hoy en Perú?`
 - `Calcula el 18 % de IGV sobre 2 450 soles.`
 
-Para la interfaz gráfica en el navegador (necesita Node.js 22 o superior):
+Para la interfaz gráfica en el navegador (necesita Node.js 22 o superior): `uv run jarvis gui`.
+
+## Migración futura a Ollama (modelo local)
+
+Este es el plan para que Jarvis funcione sin internet ni API, con todo en tu PC. El preset `jarvis-es-local` ya está listo; solo faltan el hardware y estos pasos.
+
+**Antes de migrar, verifica tu hardware:**
 
 ```powershell
-uv run jarvis gui
+Get-CimInstance Win32_ComputerSystem | Select-Object @{n="RAM_GB";e={[math]::Round($_.TotalPhysicalMemory/1GB)}}
+Get-CimInstance Win32_VideoController | Select-Object Name, AdapterRAM
 ```
+
+| Tu PC | Modelo recomendado | Experiencia esperada |
+|---|---|---|
+| 8 GB de RAM, sin GPU | `qwen3.5:4b` | Funciona, pero tarda varios segundos por respuesta |
+| 16 GB de RAM o GPU NVIDIA con 6–8 GB | `qwen3.5:9b` | Buena; recomendado |
+| 32 GB o más, o GPU con 12 GB o más | `qwen3.5:35b` | Muy buena, cercana a la nube |
+
+**Pasos:**
+
+```powershell
+winget install --id Ollama.Ollama -e
+ollama pull qwen3.5:4b                # o el modelo de la tabla
+uv run jarvis init --preset jarvis-es-local --force
+uv run jarvis chat
+```
+
+Si eliges otro modelo, edita `default_model` en `~\.openjarvis\config.toml`.
+
+**Qué se pierde al migrar:**
+
+- Los modelos chicos usan peor las herramientas: a veces no buscan en la web cuando deberían.
+- La voz (fase 2) también corre local y compite por la RAM. En PCs de 8 GB, usa Whisper `base` en lugar de `small`.
+
+**Opción híbrida, para más adelante:** usar Ollama para las preguntas simples y la nube para las difíciles. OpenJarvis ya trae un enrutador (`[learning.routing]`) que lo permite. Lo evaluamos cuando el modo local funcione.
 
 ## Personalizar a Jarvis
 
-- **Personalidad:** edita `default_system_prompt` en `~\.openjarvis\config.toml`.
+- **Personalidad:** edita `default_system_prompt` en `~\.openjarvis\config.toml`. Ojo: si vuelves a correr `jarvis init` con otro preset, el archivo se sobrescribe.
 - **Tus datos** (cómo te llamas, a qué te dedicas, tu ciudad): crea el archivo `~\.openjarvis\USER.md` y escribe ahí lo que Jarvis debe saber de ti. Así esos datos no quedan en el repo público.
-- **Modelo:** cambia `default_model`. `claude-haiku-4-5` es más rápido y barato; `claude-opus-4-6` es el más capaz.
 
 ## Traer mejoras del proyecto original
 
@@ -89,9 +141,10 @@ git merge upstream/main
 | Síntoma | Solución |
 |---|---|
 | `jarvis` no se reconoce | Antepón `uv run`: `uv run jarvis chat` |
-| "No inference engine available" | Falta el conector con Claude o la clave: corre `uv sync --extra inference-cloud` y revisa `echo $env:ANTHROPIC_API_KEY` en una terminal nueva |
-| `401 invalid x-api-key` | La clave está mal copiada: repite `setx` con la clave correcta |
-| `uv` no se reconoce | Cierra y abre PowerShell después de instalarlo |
-| Responde en inglés | Verifica que corriste `jarvis init --preset jarvis-es --force` |
+| `uv` no se reconoce | `winget install --id astral-sh.uv -e` y abre una PowerShell nueva |
+| "No inference engine available" | Corre `uv sync --extra inference-cloud --extra inference-google` y revisa la clave en una terminal nueva |
+| `401 invalid x-api-key` (Claude) o `API key not valid` (Gemini) | La clave está mal guardada: repite el paso 3 |
+| `429` o "quota exceeded" (Gemini) | Llegaste al límite gratuito; espera un minuto, o hasta el día siguiente |
+| Responde en inglés | Verifica que corriste `jarvis init --preset jarvis-es-gratis --force` |
 
 Cualquier otro error: corre `uv run jarvis doctor` y comparte la salida.
