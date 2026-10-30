@@ -9,7 +9,7 @@ Este fork de [OpenJarvis](https://github.com/open-jarvis/OpenJarvis) es un asist
 | 1 | Chat por texto en español, personalidad de Jarvis y búsqueda web | ✅ listo |
 | 2 | Voz completa: micrófono → Whisper → cerebro → voz peruana (Edge TTS), y conoce la fecha y la hora | ✅ listo |
 | 3a | Manos libres: escucha siempre y se activa con "Jarvis"; acceso directo y arranque con Windows | ✅ listo |
-| 3b | HUD animado estilo Iron Man | ⏳ |
+| 3b | HUD animado estilo Iron Man (orbe que reacciona al escuchar, pensar y hablar) | ✅ listo |
 | 4 | Herramientas de Windows: abrir apps, webs y carpetas, estado del PC, volumen y música | ✅ listo |
 | 4b | Gmail y Google Calendar | ⏳ |
 | 5 | Memoria y perfil del usuario (`MEMORY.md` y `USER.md`, solo en tu PC) | ✅ listo |
@@ -132,6 +132,17 @@ powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -A
 - Con `-AlIniciar`, Jarvis también arranca solo, minimizado, cada vez que enciendes Windows.
 - Si quieres solo el ícono, sin arranque automático, quita `-AlIniciar` del comando.
 - Para dejar de iniciarlo con Windows: `powershell -ExecutionPolicy Bypass -File scripts\windows\instalar-accesos.ps1 -QuitarInicio`.
+
+### 6b. HUD animado (el orbe de Iron Man)
+
+```powershell
+uv run jarvis chat --hands-free --hud
+```
+
+- Se abre una ventana con el reactor de Jarvis, la hora y lo último que dijeron tú y él. El ícono **JARVIS** del escritorio ya lo abre así.
+- **Cian** cuando espera o te escucha: las barras se mueven con tu voz. **Dorado** cuando piensa. **Blanco** cuando habla. **Rojo** si algo falla.
+- El HUD es una página local (`http://127.0.0.1:8765`) que solo se ve desde tu PC.
+- Si cierras la ventana del HUD, Jarvis sigue funcionando. Para volver a verla, abre esa dirección en el navegador.
 
 ### 7. Qué puede hacer Jarvis en tu PC
 

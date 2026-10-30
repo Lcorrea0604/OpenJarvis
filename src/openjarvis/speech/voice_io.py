@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import wave
+from typing import Callable
 
 _SAMPLE_RATE = 16000
 _CHANNELS = 1
@@ -32,11 +33,15 @@ def record_until_silence(
     silence_seconds: float = _SILENCE_SECONDS,
     startup_silence_seconds: float = _STARTUP_SILENCE_SECONDS,
     max_seconds: float = _MAX_RECORD_SECONDS,
+    level_callback: Callable[[float], None] | None = None,
 ) -> bytes:
     """Record from the default microphone until silence is detected.
 
     Returns raw WAV bytes (16-bit mono).
     Raises RuntimeError if sounddevice is not installed.
+
+    ``level_callback``, if given, receives the RMS amplitude of every chunk
+    (e.g. to animate a HUD); exceptions it raises are ignored.
     """
     try:
         import sounddevice as sd
@@ -67,6 +72,11 @@ def record_until_silence(
             frames.append(data)
 
             amplitude = _rms(data)
+            if level_callback is not None:
+                try:
+                    level_callback(amplitude)
+                except Exception:
+                    pass
             if amplitude > silence_threshold:
                 has_speech = True
                 silence_count = 0

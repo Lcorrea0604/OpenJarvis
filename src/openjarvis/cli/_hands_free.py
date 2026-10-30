@@ -117,6 +117,7 @@ class HandsFreeListener:
         follow_up_seconds: float = FOLLOW_UP_SECONDS,
         speak_fn: Optional[Callable[[str], None]] = None,
         clock: Callable[[], float] = time.monotonic,
+        hud: Any = None,
     ) -> None:
         self._console = console
         self._session = session
@@ -126,6 +127,12 @@ class HandsFreeListener:
         self._clock = clock
         self._awake_until = 0.0
         self._announced = False
+        if hud is None:
+            from openjarvis.cli._hud import NullHud
+
+            hud = NullHud()
+        self._hud = hud
+        self._speech_started = False
 
     def mark_awake(self) -> None:
         """Open the follow-up window (call right after Jarvis finishes talking)."""
@@ -134,10 +141,19 @@ class HandsFreeListener:
     def _is_awake(self) -> bool:
         return self._clock() < self._awake_until
 
+    def _on_level(self, rms: float) -> None:
+        self._hud.set_level(rms)
+        if not self._speech_started and rms > _SPEECH_RMS_THRESHOLD:
+            self._speech_started = True
+            self._hud.set_state("listening")
+
     def _record(self) -> bytes:
         from openjarvis.speech.voice_io import record_until_silence
 
-        return record_until_silence(startup_silence_seconds=4.0)
+        self._speech_started = False
+        return record_until_silence(
+            startup_silence_seconds=4.0, level_callback=self._on_level
+        )
 
     def handle_transcript(self, text: str) -> Optional[str] | object:
         """Decide what to do with one transcribed utterance."""
@@ -156,6 +172,7 @@ class HandsFreeListener:
             return VOICE_EXIT
 
         self._console.print(f"[bold]You (voice):[/bold] {_terminal_safe_text(text)}")
+        self._hud.heard(text)
         if not request:
             # Just "Jarvis": acknowledge and wait for the actual request.
             if self._speak_fn is not None:
@@ -183,7 +200,9 @@ class HandsFreeListener:
             return VOICE_EXIT
 
         while True:
-            if self._is_awake():
+            awake = self._is_awake()
+            self._hud.set_state("awake" if awake else "idle")
+            if awake:
                 self._console.print("[dim cyan]Te escucho…[/dim cyan]")
             try:
                 audio = self._record()
