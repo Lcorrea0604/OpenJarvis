@@ -133,8 +133,15 @@ class FasterWhisperBackend(SpeechBackend):
         *,
         format: str = "wav",
         language: Optional[str] = None,
+        initial_prompt: Optional[str] = None,
+        hotwords: Optional[str] = None,
     ) -> TranscriptionResult:
-        """Transcribe audio bytes using Faster-Whisper."""
+        """Transcribe audio bytes using Faster-Whisper.
+
+        ``initial_prompt`` and ``hotwords`` bias decoding toward expected
+        words — e.g. a wake word such as "Jarvis" that a Spanish-language
+        model would otherwise hear as "ya lo viste".
+        """
         try:
             model = self._ensure_model()
 
@@ -151,6 +158,10 @@ class FasterWhisperBackend(SpeechBackend):
                 kwargs = {}
                 if language:
                     kwargs["language"] = language
+                if initial_prompt:
+                    kwargs["initial_prompt"] = initial_prompt
+                if hotwords:
+                    kwargs["hotwords"] = hotwords
 
                 try:
                     segments_iter, info = model.transcribe(tmp.name, **kwargs)

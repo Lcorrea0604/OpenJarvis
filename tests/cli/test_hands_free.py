@@ -29,6 +29,13 @@ from openjarvis.cli._voice_chat import VOICE_EXIT
         ("Jarvis.", ""),
         ("hola Harvis", ""),
         ("estaba hablando con mi mamá", None),
+        # Spanish Whisper mis-hearing "Jarvis" (seen on a real laptop).
+        ("Ya lo viste, ¿qué hora es?", "¿qué hora es?"),
+        ("¡Ya lo viste! ¡Ya lo viste! ¡Qué hora es!", "Qué hora es"),
+        ("Ya lo vis, abre YouTube", "abre YouTube"),
+        ("ayer ya lo viste el partido", None),
+        ("Jarvis, Jarvis, abre YouTube", "abre YouTube"),
+        ("Jarvis — abre YouTube", "abre YouTube"),
         ("", None),
     ],
 )
@@ -147,3 +154,22 @@ def test_listen_without_stt_backend_exits():
     session = MagicMock()
     session.get_stt_backend.return_value = None
     assert HandsFreeListener(MagicMock(), session).listen() is VOICE_EXIT
+
+
+def test_transcribe_biases_faster_whisper_toward_wake_word():
+    session = MagicMock()
+    session.get_stt_language.return_value = "es"
+    backend = MagicMock(backend_id="faster-whisper")
+    HandsFreeListener(MagicMock(), session)._transcribe(backend, b"wav")
+    kwargs = backend.transcribe.call_args.kwargs
+    assert kwargs["hotwords"] == "Jarvis"
+    assert "Jarvis" in kwargs["initial_prompt"]
+    assert kwargs["language"] == "es"
+
+
+def test_transcribe_other_backends_get_plain_call():
+    session = MagicMock()
+    session.get_stt_language.return_value = "es"
+    backend = MagicMock(backend_id="deepgram")
+    HandsFreeListener(MagicMock(), session)._transcribe(backend, b"wav")
+    assert backend.transcribe.call_args.kwargs == {"format": "wav", "language": "es"}

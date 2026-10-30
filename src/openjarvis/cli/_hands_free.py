@@ -27,7 +27,11 @@ FOLLOW_UP_SECONDS = 8.0
 _SPEECH_RMS_THRESHOLD = 500
 
 # Whisper often hears "Jarvis" as "Yarvis", "Jarvi", "Harvis", "Llarvis"...
-_JARVIS_VARIANTS = r"(?:j|y|ll|h|ch|sh)?ar[bv]i[sz]?|jarbis|jervis|yervis"
+# A Spanish-language model may even split it into "ya lo viste"/"ya lo vis".
+_JARVIS_VARIANTS = (
+    r"(?:j|y|ll|h|ch|sh)?ar[bv]i[sz]?|jarbis|jervis|yervis"
+    r"|ya\s+(?:lo\s+)?[bv]is(?:te)?|ya\s+r[bv]is|dj?ar[bv]is"
+)
 
 # Spoken commands that end the hands-free session.
 _EXIT_PHRASES = (
@@ -64,16 +68,35 @@ def extract_command(text: str, wake_word: str = DEFAULT_WAKE_WORD) -> Optional[s
     Text without the wake word → ``None``.
     """
     normalized = _normalize(text)
-    match = _wake_pattern(wake_word).search(normalized)
+    norm_words = normalized.split()
+    original_words = text.split()
+    if len(norm_words) != len(original_words):
+        # Punctuation-only tokens would break word alignment; drop them.
+        original_words = [w for w in original_words if _normalize(w).strip()]
+    pattern = _wake_pattern(wake_word)
+
+    match = pattern.search(normalized)
     if match is None:
         return None
-    # Map the normalized match back onto the original text by word index.
     words_before = len(normalized[: match.start()].split())
-    original_words = text.split()
-    remaining = original_words[words_before + 1 :]
+    span = len(match.group().split())
+    # Multi-word variants ("ya lo viste") only count at the very start, where
+    # they are almost certainly a mis-heard "Jarvis" and not normal speech.
+    if span > 1 and words_before > 0:
+        return None
+
+    # Skip repeated wake words: "Jarvis, Jarvis, ¿qué hora es?".
+    idx = words_before + span
+    while idx < len(norm_words):
+        rest = " ".join(norm_words[idx:])
+        again = pattern.match(rest)
+        if again is None:
+            break
+        idx += len(again.group().split())
+
     # Leading filler before the wake word ("oye", "hola") is dropped; anything
     # meaningful after it is the request.
-    command = " ".join(remaining).strip(" ,.;:!¡")
+    command = " ".join(original_words[idx:]).strip(" ,.;:!¡")
     if not command and words_before > 0:
         before = " ".join(original_words[:words_before]).strip(" ,.;:!¡")
         if _normalize(before).strip() not in ("oye", "hola", "hey", "ey", "ok"):
@@ -186,6 +209,20 @@ class HandsFreeListener:
             return None
         return request
 
+    def _transcribe(self, backend: Any, audio: bytes) -> Any:
+        """Transcribe, biasing local Whisper toward hearing the wake word."""
+        language = self._session.get_stt_language()
+        if getattr(backend, "backend_id", "") == "faster-whisper":
+            word = self._wake_word.capitalize()
+            return backend.transcribe(
+                audio,
+                format="wav",
+                language=language,
+                initial_prompt=f"{word}, ¿qué hora es? {word}, abre YouTube.",
+                hotwords=word,
+            )
+        return backend.transcribe(audio, format="wav", language=language)
+
     def listen(self) -> Optional[str] | object:
         """Block until a request addressed to Jarvis is heard."""
         if not self._announced:
@@ -225,9 +262,7 @@ class HandsFreeListener:
             self._console.print("[dim]Procesando lo que escuché…[/dim]")
 
             try:
-                result = backend.transcribe(
-                    audio, format="wav", language=self._session.get_stt_language()
-                )
+                result = self._transcribe(backend, audio)
             except KeyboardInterrupt:
                 return VOICE_EXIT
             except Exception as exc:
